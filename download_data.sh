@@ -1,4 +1,3 @@
-cd $DATA_PATH
 wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/Annotations_Train_mscoco.zip
 unzip Annotations_Train_mscoco.zip
 rm Annotations_Train_mscoco.zip
