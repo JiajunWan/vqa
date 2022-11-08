@@ -40,12 +40,16 @@ class BaselineNet(nn.Module):
         # Classifier
         self.classifier = nn.Linear(
             self.text_encoder.config.hidden_size + 512,
-            TODO
+            n_answers,
         )
 
     def forward(self, image, question):
         """Forward pass, image (B, 3, 224, 224), qs list of str."""
-        return TODO
+        text_feats = self.compute_text_feats(question)
+        vis_feats = self.compute_vis_feats(image)
+        concate_feats = torch.hstack((text_feats, vis_feats))
+        logits = self.classifier(concate_feats)
+        return logits
 
     @torch.no_grad()
     def compute_text_feats(self, text):
@@ -59,7 +63,7 @@ class BaselineNet(nn.Module):
     @torch.no_grad()
     def compute_vis_feats(self, image):
         """Convert image tensors to feature tensors."""
-        return TODO  # feed to vis_encoder and then mean pool on spatial dims
+        return torch.nn.functional.adaptive_avg_pool2d(self.vis_encoder(image), 1).squeeze() # feed to vis_encoder and then mean pool on spatial dims
 
     def train(self, mode=True):
         """Override train to set backbones in eval mode."""

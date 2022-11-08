@@ -103,12 +103,14 @@ class Trainer:
             # pos_weight[-1] = 0.1  # 'Other' has lower weight
             # and use the pos_weight argument
             # ^OPTIONAL: the expected performance can be achieved without this
-            loss = TODO
+            loss = F.binary_cross_entropy_with_logits(scores, answers)
 
             # Update
             if mode == 'train':
                 # optimize loss
-                TODO
+                loss.backward()
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
             # Accuracy
             n_samples += len(scores)
