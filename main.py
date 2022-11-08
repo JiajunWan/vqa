@@ -128,7 +128,7 @@ class Trainer:
                 'Loss/' + mode, loss.item(),
                 epoch * len(self.data_loaders[mode]) + step
             )
-            if mode == 'val' and step == 100:  # change this to show other images
+            if mode == 'val' and step == 0:  # change this to show other images
                 _n_show = 3  # how many images to plot
                 for i in range(_n_show):
                     self.writer.add_image(
@@ -147,7 +147,7 @@ class Trainer:
                     )
                     # and the predicted answer
                     self.writer.add_text(
-                        'Predicted Answer%d' % i, self._id2answer[scores.argmax(1).cpu().numpy()[i]],
+                        'Predicted Answer%d' % i, self._id2answer[scores.argmax(1)[i].item()],
                         epoch * _n_show + i
                     )
             # add code to plot the current accuracy
