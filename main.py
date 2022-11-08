@@ -88,7 +88,7 @@ class Trainer:
 
     def train_test_loop(self, mode='train', epoch=1000):
         n_correct, n_samples = 0, 0
-        for step, data in tqdm(enumerate(self.data_loaders[mode])):
+        for step, data in tqdm(enumerate(self.data_loaders[mode]), total=-(self.args.total[mode] // -self.args.batch_size)):
 
             # Forward pass
             scores = self.model(
@@ -128,7 +128,7 @@ class Trainer:
                 'Loss/' + mode, loss.item(),
                 epoch * len(self.data_loaders[mode]) + step
             )
-            if mode == 'val' and step == 0:  # change this to show other images
+            if mode == 'val' and step == 100:  # change this to show other images
                 _n_show = 3  # how many images to plot
                 for i in range(_n_show):
                     self.writer.add_image(
@@ -136,9 +136,25 @@ class Trainer:
                         epoch * _n_show + i, dataformats='CHW'
                     )
                     # add code to show the question
+                    self.writer.add_text(
+                        'Question%d' % i, data['question'][i],
+                        epoch * _n_show + i
+                    )
                     # the gt answer
+                    self.writer.add_text(
+                        'GT Answer%d' % i, self._id2answer[(data['answers'][i] == 1).nonzero(as_tuple=True)[0][0].item()],
+                        epoch * _n_show + i
+                    )
                     # and the predicted answer
+                    self.writer.add_text(
+                        'Predicted Answer%d' % i, self._id2answer[scores.argmax(1).cpu().numpy()[i]],
+                        epoch * _n_show + i
+                    )
             # add code to plot the current accuracy
+            self.writer.add_scalar(
+                'Acc/' + mode, n_correct / n_samples,
+                epoch * len(self.data_loaders[mode]) + step
+            )
         acc = n_correct / n_samples
         print(acc)
         return acc
@@ -187,13 +203,18 @@ def main():
         answer_to_id_map=train_dataset.answer_to_id_map
     )
     print(len(train_dataset), len(val_dataset))
+    args.total = {
+        mode: len(train_dataset) if mode == 'train' else len(val_dataset)
+        for mode in ('train', 'val')
+    }
     data_loaders = {
         mode: DataLoader(
             train_dataset if mode == 'train' else val_dataset,
             batch_size=args.batch_size,
             shuffle=mode == 'train',
             drop_last=mode == 'train',
-            num_workers=4
+            pin_memory=True,
+            num_workers=16
         )
         for mode in ('train', 'val')
     }

@@ -2,3 +2,7 @@
 *mscoco*
 *run*
 *cache*
+*.pt
+report.*
+!*.tex
+!*.pdf
