@@ -8,6 +8,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
 
 from models import BaselineNet, TransformerNet
 from vqa_dataset import VQADataset
@@ -88,6 +90,7 @@ class Trainer:
 
     def train_test_loop(self, mode='train', epoch=1000):
         n_correct, n_samples = 0, 0
+        counter = {}
         for step, data in tqdm(enumerate(self.data_loaders[mode]), total=-(self.args.total[mode] // -self.args.batch_size)):
 
             # Forward pass
@@ -123,6 +126,11 @@ class Trainer:
                 * answers
             ).sum().item()  # checks if argmax matches any ground-truth
 
+            # Count
+            pred = scores.argmax(1)
+            for i in range(len(pred)):
+                counter[pred[i].item()] = counter.get(pred[i].item(), 0) + 1
+
             # Logging
             self.writer.add_scalar(
                 'Loss/' + mode, loss.item(),
@@ -155,6 +163,19 @@ class Trainer:
                 'Acc/' + mode, n_correct / n_samples,
                 epoch * len(self.data_loaders[mode]) + step
             )
+
+        # Histogram
+        counter = np.array(sorted(list(counter.items()), key=lambda x: x[1]))
+        # 10 most frequently predicted classes
+        print([self._id2answer[x] for x in counter[:, 0][::-1][:10]])
+        _ = plt.figure(figsize = (10, 5))
+        x = list(range(len(counter)-1, -1, -1))
+        x[0] = 5210
+        plt.bar(x, counter[:, 1])
+        plt.ylabel("Frequency")
+        plt.title("Histogram of the frequencies of the predicted answers")
+        plt.savefig("report/q2.7.png", dpi=500)
+
         acc = n_correct / n_samples
         print(acc)
         return acc
