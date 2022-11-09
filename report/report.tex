@@ -207,5 +207,136 @@ Because network is not expressive enough to capture the causal factors the data,
 
 \setcounter{subsection}{0}
 \subsection{Complete the CrossAttentionLayer}
+\begin{lstlisting}
+class CrossAttentionLayer(nn.Module):
+    """Self-/Cross-attention between two sequences."""
+
+    def __init__(self, d_model=256, dropout=0.1, n_heads=8):
+        """Initialize layers, d_model is the encoder dimension."""
+        super().__init__()
+
+        # Self-attention for seq1
+        self.sa1 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )  # use batch_first=True everywhere!
+        self.dropout_1 = nn.Dropout(dropout)
+        self.norm_1 = nn.LayerNorm(d_model)
+
+        # Self-attention for seq2
+        self.sa2 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )
+        self.dropout_2 = nn.Dropout(dropout)
+        self.norm_2 = nn.LayerNorm(d_model)
+
+        # Cross attention from seq1 to seq2
+        self.cross_12 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )
+        self.dropout_12 = nn.Dropout(dropout)
+        self.norm_12 = nn.LayerNorm(d_model)
+
+        # FFN for seq1
+        self.ffn_12 = nn.Sequential(
+            nn.Linear(256, 1024),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(1024, 256),
+            nn.Dropout(dropout),
+        )
+        self.norm_122 = nn.LayerNorm(256)
+
+        # Cross attention from seq2 to seq1
+        self.cross_21 = nn.MultiheadAttention(
+            d_model, n_heads, dropout=dropout, batch_first=True
+        )
+        self.dropout_21 = nn.Dropout(dropout)
+        self.norm_21 = nn.LayerNorm(d_model)
+
+        # FFN for seq2
+        self.ffn_21 = nn.Sequential(
+            nn.Linear(256, 1024),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(1024, 256),
+            nn.Dropout(dropout),
+        )
+        self.norm_212 = nn.LayerNorm(256)
+
+    def forward(self, seq1, seq1_key_padding_mask, seq2,
+                seq2_key_padding_mask,
+                seq1_pos=None, seq2_pos=None):
+        """Forward pass, seq1 (B, S1, F), seq2 (B, S2, F)."""
+        # Self-attention for seq1
+        q1 = k1 = v1 = seq1
+        if seq1_pos is not None:
+            q1 = q1 + seq1_pos
+            k1 = k1 + seq1_pos
+        seq1b = self.sa1(
+            query=q1,
+            key=k1,
+            value=v1,
+            attn_mask=None,
+            key_padding_mask=seq1_key_padding_mask  # (B, S1)
+        )[0]
+        seq1 = self.norm_1(seq1 + self.dropout_1(seq1b))
+
+        # Self-attention for seq2
+        q2 = k2 = v2 = seq2
+        if seq2_pos is not None:
+            q2 = q2 + seq2_pos
+            k2 = k2 + seq2_pos
+        seq2b = self.sa2(
+            query=q2,
+            key=k2,
+            value=v2,
+            attn_mask=None,
+            key_padding_mask=seq2_key_padding_mask  # (B, S2)
+        )[0]
+        seq2 = self.norm_2(seq2 + self.dropout_2(seq2b))
+
+        # Create key, query, value for seq1, seq2
+        q1 = k1 = v1 = seq1
+        q2 = k2 = v2 = seq2
+        if seq1_pos is not None:
+            q1 = q1 + seq1_pos
+            k1 = k1 + seq1_pos
+        if seq2_pos is not None:
+            q2 = q2 + seq2_pos
+            k2 = k2 + seq2_pos
+
+        # Cross-attention from seq1 to seq2 and FFN
+        seq1b = self.cross_12(
+            query=q1,
+            key=k2,
+            value=v2,
+            attn_mask=None,
+        )[0]
+        seq1 = self.norm_12(seq1 + self.dropout_12(seq1b))
+
+        # FFN for seq1
+        seq1 = self.norm_122(seq1 + self.ffn_12(seq1))
+
+        # Cross-attention from seq2 to seq1 and FFN
+        seq2b = self.cross_21(
+            query=q2,
+            key=k1,
+            value=v1,
+            attn_mask=None,
+        )[0]
+        seq2 = self.norm_21(seq2 + self.dropout_21(seq2b))
+
+        # FFN for seq2
+        seq2 = self.norm_212(seq2 + self.ffn_21(seq2))
+
+        return seq1, seq2
+\end{lstlisting}
+
+\subsection{Load the trained weights and reproduce our result.}
+Final Val Acc: 0.6759579300809797
+
+\subsection{How does the histogram of answers look now?}
+\includegraphics[width=\textwidth]{q3.3.png}
+The histogram of answers look much better now with a peak that is much lower, more different sub-peaks, and more less frequent answers (not appearing just once). The top answer is "yes", not "other" in previous task.
 
 \end{document}

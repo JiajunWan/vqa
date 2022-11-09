@@ -170,11 +170,11 @@ class Trainer:
         print([self._id2answer[x] for x in counter[:, 0][::-1][:10]])
         _ = plt.figure(figsize = (10, 5))
         x = list(range(len(counter)-1, -1, -1))
-        x[0] = 5210
+        x[0] = 5217
         plt.bar(x, counter[:, 1])
         plt.ylabel("Frequency")
         plt.title("Histogram of the frequencies of the predicted answers")
-        plt.savefig("report/q2.7.png", dpi=500)
+        plt.savefig("report/q3.3.png", dpi=500)
 
         acc = n_correct / n_samples
         print(acc)
