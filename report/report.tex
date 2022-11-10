@@ -238,30 +238,30 @@ class CrossAttentionLayer(nn.Module):
 
         # FFN for seq1
         self.ffn_12 = nn.Sequential(
-            nn.Linear(256, 1024),
+            nn.Linear(d_model, 1024),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(1024, 256),
+            nn.Linear(1024, d_model),
             nn.Dropout(dropout),
         )
-        self.norm_122 = nn.LayerNorm(256)
+        self.norm_122 = nn.LayerNorm(d_model)
 
         # Cross attention from seq2 to seq1
         self.cross_21 = nn.MultiheadAttention(
             d_model, n_heads, dropout=dropout, batch_first=True
         )
-        self.dropout_21 = nn.Dropout(dropout)
+        self.dropout_21 = nn.Dropout()
         self.norm_21 = nn.LayerNorm(d_model)
 
         # FFN for seq2
         self.ffn_21 = nn.Sequential(
-            nn.Linear(256, 1024),
+            nn.Linear(d_model, 1024),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(1024, 256),
+            nn.Linear(1024, d_model),
             nn.Dropout(dropout),
         )
-        self.norm_212 = nn.LayerNorm(256)
+        self.norm_212 = nn.LayerNorm(d_model)
 
     def forward(self, seq1, seq1_key_padding_mask, seq2,
                 seq2_key_padding_mask,
@@ -311,6 +311,7 @@ class CrossAttentionLayer(nn.Module):
             key=k2,
             value=v2,
             attn_mask=None,
+            key_padding_mask=seq2_key_padding_mask  # (B, S2)
         )[0]
         seq1 = self.norm_12(seq1 + self.dropout_12(seq1b))
 
@@ -323,6 +324,7 @@ class CrossAttentionLayer(nn.Module):
             key=k1,
             value=v1,
             attn_mask=None,
+            key_padding_mask=seq1_key_padding_mask  # (B, S1)
         )[0]
         seq2 = self.norm_21(seq2 + self.dropout_21(seq2b))
 
@@ -333,7 +335,7 @@ class CrossAttentionLayer(nn.Module):
 \end{lstlisting}
 
 \subsection{Load the trained weights and reproduce our result.}
-Final Val Acc: 0.6759579300809797
+Final Val Acc: 0.6762130489169794
 
 \subsection{How does the histogram of answers look now?}
 \includegraphics[width=\textwidth]{q3.3.png}
