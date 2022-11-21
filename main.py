@@ -235,7 +235,7 @@ def main():
             shuffle=mode == 'train',
             drop_last=mode == 'train',
             pin_memory=True,
-            num_workers=16
+            num_workers=32
         )
         for mode in ('train', 'val')
     }

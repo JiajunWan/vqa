@@ -38,9 +38,25 @@ class BaselineNet(nn.Module):
             param.requires_grad = False
 
         # Classifier
-        self.classifier = nn.Linear(
-            self.text_encoder.config.hidden_size + 512,
-            n_answers,
+        # self.classifier = nn.Linear(
+        #     self.text_encoder.config.hidden_size + 512,
+        #     n_answers,
+        # )
+        self.classifier = nn.Sequential(
+            nn.Linear(
+                self.text_encoder.config.hidden_size + 512,
+                2048,
+            ),
+            nn.ReLU(),
+            nn.Linear(
+                2048,
+                2048,
+            ),
+            nn.ReLU(),
+            nn.Linear(
+                2048,
+                n_answers,
+            )
         )
 
     def forward(self, image, question):
