@@ -201,6 +201,7 @@ Show all the 5217 labels \\
 \subsection{What are the 10 most frequently predicted classes? Why do you think this happens? You can optionally visualize the frequency of ground-truth answers in the training set.}
 10 most frequent classes are: ['Other', 'yes', '2', 'no', 'baseball', 'broccoli', 'red', 'sheep', '3', 'surfing'] \\
 Because network is not expressive enough to capture the causal factors the data, it will try to capture the output distribution. That is, because the output distribution, the distribution of the labels in the training dataset, is largely skewed, having a majority of "other", "yes", and so on as we can see in the histogram, the network will try to predict these top frequent classes as much as possible to get better accuracy.
+\newpage
 
 \setcounter{section}{3}
 \section*{Task 3: Transformer Network}
@@ -340,5 +341,36 @@ Final Val Acc: 0.6762130489169794
 \subsection{How does the histogram of answers look now?}
 \includegraphics[width=\textwidth]{q3.3.png}
 The histogram of answers look much better now with a peak that is much lower, more different sub-peaks, and more less frequent answers (not appearing just once). The top answer is "yes", not "other" in previous task.
+\newpage
+
+\setcounter{section}{4}
+\section*{Task 4: Bells and Whistles}
+
+\setcounter{subsection}{0}
+\subsection{Is it a matter of capacity? In the BaselineNet replace the linear classifier with a deeper MLP. Report the accuracy plot of this model.}
+No it is not a matter of capacity. I replaced the linear classifier with two hidden layer MLP with hidden size of 2048.
+\begin{lstlisting}
+self.classifier = nn.Sequential(
+    nn.Linear(
+        self.text_encoder.config.hidden_size + 512,
+        2048,
+    ),
+    nn.ReLU(),
+    nn.Linear(
+        2048,
+        2048,
+    ),
+    nn.ReLU(),
+    nn.Linear(
+        2048,
+        n_answers,
+    )
+)
+\end{lstlisting}
+\includegraphics[width=\textwidth]{q4.1_1.png}
+\includegraphics[width=\textwidth]{q4.1_2.png}
+\includegraphics[width=\textwidth]{q4.1_3.png}
+\includegraphics[width=\textwidth]{q4.1_4.png}
+The final val accuracy I got is 0.5249522680887484, which is even slightly worse than the baseline. The validation accuracy plot looks very unstable with jumping backwards among epochs. This is probably because the classifier is too large to train sufficiently. It shows that it is not a matter of capacity.
 
 \end{document}
